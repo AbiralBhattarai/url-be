@@ -10,8 +10,11 @@ from .utils.services import generate_short_url,get_clicks_for_url
 from .utils.throttle import check_rate_limit
 from .serializers import ShortURLSerializer, ClickSerializer
 from rest_framework.pagination import PageNumberPagination
+import os
+from dotenv import load_dotenv
 # Create your views here.
 
+load_dotenv()
 
 class CreateShortURLView(APIView):
     def post(self, request):
@@ -92,7 +95,7 @@ class ListShortURLsView(APIView):
         try:
             urls = ShortURL.objects.all()
             paginator = PageNumberPagination()
-            paginator.page_size = 2
+            paginator.page_size = int(os.getenv('PAGE_SIZE'))
             paginated_urls = paginator.paginate_queryset(urls, request)
             serializer = ShortURLSerializer(paginated_urls, many=True)
             return paginator.get_paginated_response(serializer.data)
