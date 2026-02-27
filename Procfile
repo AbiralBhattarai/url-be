@@ -1,0 +1,1 @@
+web: cd backend/urlshortener && gunicorn urlshortener.wsgi --bind 0.0.0.0:8000
