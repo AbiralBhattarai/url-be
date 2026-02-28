@@ -51,6 +51,11 @@ def validate_url(url):
         return False, "URL must have content after http:// or https://"
     if '.' not in rest_of_url:
         return False, "URL must contain a domain with a dot (.)"
+    
+    first_dot_index = rest_of_url.find('.')
+    if first_dot_index == 0:
+        return False, "URL must have domain name before the dot (.)"
+    
     last_dot_index = rest_of_url.rfind('.')
     if last_dot_index == len(rest_of_url) - 1:
         return False, "URL must have content after the domain dot (.)"
