@@ -35,3 +35,24 @@ def get_clicks_for_url(shortened_url, days=7):
         'clicks': clicks,
         'total_count': clicks.count()
     }
+
+
+
+def validate_url(url):
+    if not url or not isinstance(url, str):
+        return False, "URL must be a non-empty string"
+    if not url.startswith('http://') and not url.startswith('https://'):
+        return False, "URL must start with http:// or https://"
+    
+    protocol_end = url.find('://') + 3
+    rest_of_url = url[protocol_end:]
+
+    if not rest_of_url:
+        return False, "URL must have content after http:// or https://"
+    if '.' not in rest_of_url:
+        return False, "URL must contain a domain with a dot (.)"
+    last_dot_index = rest_of_url.rfind('.')
+    if last_dot_index == len(rest_of_url) - 1:
+        return False, "URL must have content after the domain dot (.)"
+    
+    return True, None

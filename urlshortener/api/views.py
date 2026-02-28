@@ -6,12 +6,14 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import IntegrityError
 from .models import ShortURL, Click
-from .utils.services import generate_short_url,get_clicks_for_url
+from .utils.services import generate_short_url,get_clicks_for_url,validate_url
 from .utils.throttle import check_rate_limit
 from .serializers import ShortURLSerializer, ClickSerializer
 from rest_framework.pagination import PageNumberPagination
 import os
 from dotenv import load_dotenv
+import re
+
 # Create your views here.
 
 load_dotenv()
@@ -32,6 +34,14 @@ class CreateShortURLView(APIView):
             if not original_url:
                 return Response(
                     {'error': 'original_url is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validate URL format
+            is_valid, error_message = validate_url(original_url)
+            if not is_valid:
+                return Response(
+                    {'error': error_message},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
