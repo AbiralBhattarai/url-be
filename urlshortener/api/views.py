@@ -12,6 +12,8 @@ from .serializers import ShortURLSerializer, ClickSerializer
 from rest_framework.pagination import PageNumberPagination
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from dotenv import load_dotenv
+import os
 
 
 class CreateShortURLView(APIView):
@@ -119,7 +121,7 @@ class ListShortURLsView(APIView):
         try:
             urls = ShortURL.objects.all()
             paginator = PageNumberPagination()
-            paginator.page_size = 2
+            paginator.page_size = os.getenv('PAGE_SIZE')
             paginated_urls = paginator.paginate_queryset(urls, request)
             serializer = ShortURLSerializer(paginated_urls, many=True)
             return paginator.get_paginated_response(serializer.data)
