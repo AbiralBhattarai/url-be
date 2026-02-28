@@ -6,19 +6,23 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import IntegrityError
 from .models import ShortURL, Click
-from .utils.services import generate_short_url,get_clicks_for_url,validate_url
+from .utils.services import generate_short_url,get_clicks_for_url
 from .utils.throttle import check_rate_limit
 from .serializers import ShortURLSerializer, ClickSerializer
 from rest_framework.pagination import PageNumberPagination
-import os
-from dotenv import load_dotenv
-import re
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
-# Create your views here.
-
-load_dotenv()
 
 class CreateShortURLView(APIView):
+    """View for creating shortened URLs."""
+    @extend_schema(
+        summary="Create a shortened URL",
+        description="Create a new shortened URL from a given original URL. Returns existing short URL if one already exists for the same original URL.",
+        request={'application/json': {'type': 'object', 'properties': {'original_url': {'type': 'string', 'description': 'The original URL to shorten'}}}},
+        responses={201: ShortURLSerializer, 400: {'type': 'object'}, 429: {'type': 'object'}},
+        tags=['URLs']
+    )
     def post(self, request):
         try:
             #check rate limit
@@ -34,14 +38,6 @@ class CreateShortURLView(APIView):
             if not original_url:
                 return Response(
                     {'error': 'original_url is required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Validate URL format
-            is_valid, error_message = validate_url(original_url)
-            if not is_valid:
-                return Response(
-                    {'error': error_message},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -75,7 +71,16 @@ class CreateShortURLView(APIView):
             )
 
 
+
 class RedirectShortURLView(APIView):
+    """View for redirecting to original URL."""
+    @extend_schema(
+        summary="Redirect short URL",
+        description="Redirect to the original URL using a shortened URL. Automatically tracks clicks.",
+        parameters=[OpenApiParameter('shortened_url', OpenApiTypes.STR, OpenApiParameter.PATH, description='The shortened URL identifier')],
+        responses={302: None, 404: {'type': 'object'}},
+        tags=['URLs']
+    )
     def get(self, request, shortened_url):
         try:
             short_url_obj = ShortURL.objects.get(shortened_url=shortened_url)
@@ -100,12 +105,21 @@ class RedirectShortURLView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+
 class ListShortURLsView(APIView):
+    """View for listing all shortened URLs."""
+    @extend_schema(
+        summary="List all shortened URLs",
+        description="Retrieve a paginated list of all shortened URLs with their metadata.",
+        parameters=[OpenApiParameter('page', OpenApiTypes.INT, OpenApiParameter.QUERY, description='Page number')],
+        responses={200: ShortURLSerializer},
+        tags=['URLs']
+    )
     def get(self, request):
         try:
             urls = ShortURL.objects.all()
             paginator = PageNumberPagination()
-            paginator.page_size = int(os.getenv('PAGE_SIZE'))
+            paginator.page_size = 2
             paginated_urls = paginator.paginate_queryset(urls, request)
             serializer = ShortURLSerializer(paginated_urls, many=True)
             return paginator.get_paginated_response(serializer.data)
@@ -116,7 +130,16 @@ class ListShortURLsView(APIView):
             )
 
 
+
 class ClicksView(APIView):
+    """View for retrieving click analytics."""
+    @extend_schema(
+        summary="Get click analytics",
+        description="Retrieve click analytics for a specific shortened URL. Shows total clicks in last 7 days and detailed click timestamps.",
+        parameters=[OpenApiParameter('shortened_url', OpenApiTypes.STR, OpenApiParameter.PATH, description='The shortened URL identifier')],
+        responses={200: {'type': 'object'}, 404: {'type': 'object'}},
+        tags=['Analytics']
+    )
     def get(self, request, shortened_url):
         try:
             data = get_clicks_for_url(shortened_url)
