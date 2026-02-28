@@ -154,3 +154,13 @@ CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
+
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'URL Shortener API',
+    'DESCRIPTION': 'API for shortening URLs',
+    'VERSION': '1.0.0',
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
+    'EXCLUDE_PATHS': [r'^api/schema/$'],
+}
